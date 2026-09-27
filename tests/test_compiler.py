@@ -35,6 +35,23 @@ class CompilerTests(unittest.TestCase):
         with self.assertRaises(compiler.CompilerError):
             compiler._language_id("SQL", [])
 
+    def test_connection_status_reports_available_compilers(self):
+        languages = [
+            {"id": 71, "name": "Python (3.8.1)"},
+            {"id": 63, "name": "JavaScript (Node.js 12.14.0)"},
+            {"id": 51, "name": "C# (Mono 6.6.0.161)"},
+        ]
+        with patch("compiler.get_languages", return_value=languages):
+            status = compiler.connection_status()
+        self.assertTrue(status["configured"])
+        self.assertEqual(status["supported_targets"], ["python", "javascript", "c#", "c# / .net"])
+
+    def test_connection_status_surfaces_provider_unavailable(self):
+        with patch("compiler.get_languages", side_effect=compiler.CompilerError("provider unavailable")):
+            status = compiler.connection_status()
+        self.assertFalse(status["configured"])
+        self.assertEqual(status["error"], "provider unavailable")
+
     def test_execute_posts_code_then_polls_result(self):
         def fake_urlopen(req, timeout=0):
             url = req.full_url
