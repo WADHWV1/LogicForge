@@ -1,0 +1,2 @@
+Flask>=3.0,<4.0
+github-copilot-sdk>=1.0.0,<2.0.0
