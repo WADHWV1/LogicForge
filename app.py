@@ -1,12 +1,16 @@
 """LogicForge: a local pseudocode-to-code learning tool powered by Copilot."""
 
 import asyncio
+import hmac
 import json
 import logging
 import os
 import re
+import threading
+import time
 import urllib.error
 import urllib.request
+from collections import defaultdict, deque
 
 from copilot import CopilotClient
 from copilot.session_events import AssistantMessageData, SessionIdleData
@@ -238,13 +242,58 @@ def allowed_origins() -> set[str]:
     return DEFAULT_ALLOWED_ORIGINS | {origin.strip() for origin in configured.split(",") if origin.strip()}
 
 
+# The public Pages UI sends this key in an Authorization header. It is never
+# placed in site-config.js or persistent browser storage. Configure a unique
+# random value in the hosted backend's environment.
+_rate_events: dict[str, deque[float]] = defaultdict(deque)
+_rate_lock = threading.Lock()
+_PROTECTED_PATHS = {"/models", "/convert", "/execute", "/compiler/status"}
+
+
+@app.get("/health")
+def health():
+    """Public liveness endpoint; it does not reveal model or secret state."""
+    return jsonify(status="ok", service="LogicForge API")
+
+
+@app.before_request
+def protect_public_api():
+    if request.path not in _PROTECTED_PATHS or request.method == "OPTIONS":
+        return None
+
+    expected = os.getenv("LOGICFORGE_ACCESS_TOKEN", "").strip()
+    # Fail closed on Railway if the access gate was not configured.
+    if os.getenv("RAILWAY_ENVIRONMENT_NAME") and not expected:
+        return jsonify(error="Backend access is not configured yet."), 503
+    if expected:
+        supplied = request.headers.get("Authorization", "")
+        if not supplied.startswith("Bearer ") or not hmac.compare_digest(supplied[7:], expected):
+            return jsonify(error="Enter the LogicForge backend access key in the page settings."), 401
+
+    # A small per-process guard against accidental bursts and simple abuse.
+    # The hosted service is configured as a single replica; this is not a
+    # substitute for a distributed rate limiter if it is later scaled out.
+    if request.path in {"/convert", "/execute"}:
+        now = time.monotonic()
+        client = request.remote_addr or "unknown"
+        bucket = f"{client}:{request.path}"
+        with _rate_lock:
+            events = _rate_events[bucket]
+            while events and events[0] <= now - 60:
+                events.popleft()
+            if len(events) >= 12:
+                return jsonify(error="Too many requests. Wait a minute and try again."), 429
+            events.append(now)
+    return None
+
+
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get("Origin")
     if origin in allowed_origins():
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
         response.headers["Vary"] = "Origin"
     return response
 
