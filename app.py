@@ -263,7 +263,7 @@ def protect_public_api():
 
     expected = os.getenv("LOGICFORGE_ACCESS_TOKEN", "").strip()
     # Fail closed on Railway if the access gate was not configured.
-    if (os.getenv("RAILWAY_ENVIRONMENT_NAME") or os.getenv("VERCEL")) and not expected:
+    if (os.getenv("RAILWAY_ENVIRONMENT_NAME") or os.getenv("VERCEL") or os.getenv("RENDER")) and not expected:
         return jsonify(error="Backend access is not configured yet."), 503
     if expected:
         supplied = request.headers.get("Authorization", "")
