@@ -103,6 +103,28 @@
             <div class="mb-2 flex items-center gap-2"><span class="grid h-5 w-5 place-items-center rounded-full bg-emerald-400/10 text-xs text-emerald-300">✓</span><h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Intent check · detailed code breakdown · learning notes</h3></div>
             <pre id="learning-notes" class="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-slate-400"></pre>
           </div>
+          <section class="border-t border-white/10 bg-[#0d1016] px-4 py-4" aria-labelledby="code-chat-title">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div><h3 id="code-chat-title" class="text-sm font-semibold text-slate-200">Ask about this code</h3><p class="mt-1 text-xs text-slate-500">Quick questions use the selected AI model and current editor contents.</p></div>
+              <button id="download-colab" type="button" class="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-xs font-medium text-emerald-200 transition hover:bg-emerald-400/10">Download Python notebook for Colab</button>
+            </div>
+            <div id="chat-messages" class="mt-3 max-h-64 space-y-2 overflow-y-auto" role="log" aria-live="polite"></div>
+            <form id="code-chat-form" class="mt-3 flex flex-col gap-2 sm:flex-row">
+              <label class="sr-only" for="code-chat-question">Ask a question about this code</label>
+              <input id="code-chat-question" maxlength="4000" class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#090b10] px-3 py-2.5 text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:border-violet-400" placeholder="Why does this function return None?" autocomplete="off">
+              <button id="code-chat-send" type="submit" class="rounded-lg bg-violet-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:opacity-50">Ask AI</button>
+            </form>
+            <p id="chat-status" class="mt-2 min-h-4 text-xs text-slate-500" role="status" aria-live="polite"></p>
+          </section>
+          <section class="border-t border-white/10 bg-[#0d1016] px-4 py-4" aria-labelledby="matrix-title">
+            <div class="flex flex-wrap items-start justify-between gap-2"><div><h3 id="matrix-title" class="text-sm font-semibold text-slate-200">Classification evaluation</h3><p class="mt-1 max-w-2xl text-xs leading-5 text-slate-500">For classifiers only: paste ground-truth labels and predicted labels in the same order. Evaluation runs in this browser; nothing is sent to AI.</p></div><span class="rounded-full border border-white/10 px-2 py-1 text-[10px] uppercase tracking-wide text-slate-500">Local evaluation</span></div>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <div><label for="actual-labels" class="mb-1 block text-xs font-medium text-slate-400">Actual / ground-truth labels</label><textarea id="actual-labels" rows="3" class="w-full resize-y rounded-lg border border-white/10 bg-[#090b10] px-3 py-2 font-mono text-xs text-slate-200 outline-none focus:border-violet-400" placeholder="cat, dog, cat, bird"></textarea></div>
+              <div><label for="predicted-labels" class="mb-1 block text-xs font-medium text-slate-400">Predicted labels</label><textarea id="predicted-labels" rows="3" class="w-full resize-y rounded-lg border border-white/10 bg-[#090b10] px-3 py-2 font-mono text-xs text-slate-200 outline-none focus:border-violet-400" placeholder="cat, dog, bird, bird"></textarea></div>
+            </div>
+            <div class="mt-3 flex flex-wrap items-center gap-3"><button id="evaluate-classifier" type="button" class="rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/10">Build confusion matrix</button><p id="matrix-status" class="text-xs text-slate-500" role="status" aria-live="polite">Rows are actual labels; columns are predicted labels.</p></div>
+            <pre id="matrix-result" class="mt-3 hidden overflow-x-auto rounded-lg border border-white/[.08] bg-black/30 p-3 font-mono text-xs leading-5 text-slate-300" aria-live="polite"></pre>
+          </section>
           <div class="flex items-center justify-between border-t border-white/10 px-4 py-2.5 text-xs text-slate-500"><span id="output-meta" role="status" aria-live="polite">Awaiting input</span><span>LOGICFORGE · CODE WORKSPACE</span></div>
         </article>
       </section>
@@ -175,7 +197,8 @@
       { version: 'V6.0', title: 'RAG, review checks, and local LoRA path', date: 'AI pipeline upgrade', detail: 'Added local knowledge retrieval, a second model review and one repair pass, safe static checks, and an optional Ollama provider for locally fine-tuned models.' },
       { version: 'V7.0', title: 'Online compile and run', date: 'Compiler upgrade', detail: 'Added an optional Judge0 compiler with explicit per-run consent, stdin, compile diagnostics, program output, and bounded execution settings.' },
       { version: 'V8.0', title: 'Hosted backend connection', date: 'Deployment hardening', detail: 'Added a health endpoint, a session-only backend access key, origin-aware CORS, and basic request throttling for hosted use.' },
-      { version: 'V9.0', title: 'Render API deployment', date: 'Cloud hosting', detail: 'Added a Render Blueprint for the Flask API, Python runtime pin, Gunicorn serving, health checks, and secret-only Copilot configuration.' }
+      { version: 'V9.0', title: 'Render API deployment', date: 'Cloud hosting', detail: 'Added a Render Blueprint for the Flask API, Python runtime pin, Gunicorn serving, health checks, and secret-only Copilot configuration.' },
+      { version: 'V10.0', title: 'Code tutor, compiler probe, and ML evaluation', date: 'Learning and local ML', detail: 'Added an AI chat grounded in the current code, a Python notebook download for Google Colab, browser-local classification metrics, and a live Judge0 connectivity/language check.' }
     ];
     const inputEditor = CodeMirror.fromTextArea(document.getElementById('source'), {
       theme: 'material-darker', lineNumbers: true, lineWrapping: true, indentUnit: 4, tabSize: 4,
@@ -189,6 +212,7 @@
     const runButton = document.getElementById('run-online');
     let compilerConfigured = false;
     let generatedLanguage = 'Python';
+    const chatHistory = [];
 
     document.getElementById('save-api-key').addEventListener('click', () => {
       const key = apiKeyInput.value.trim();
@@ -243,6 +267,9 @@
         generatedLanguage = resolveCompilerLanguage(document.getElementById('target-language').value, parsed.language);
         document.getElementById('learning-notes').textContent = parsed.notes;
         document.getElementById('learning-panel').classList.toggle('hidden', !parsed.notes);
+        chatHistory.length = 0;
+        document.getElementById('chat-messages').replaceChildren();
+        document.getElementById('chat-status').textContent = 'Ask about the generated code, its logic, or its checks.';
         document.getElementById('copy-output').disabled = false;
         runButton.disabled = !compilerConfigured;
         outputMeta.textContent = `Review and checks complete · ${document.getElementById('model-select').selectedOptions[0]?.textContent || 'AI model'} · code not executed`;
@@ -300,6 +327,98 @@
       }
     });
 
+    function addChatMessage(role, content) {
+      const item = document.createElement('div');
+      item.className = `max-w-[95%] whitespace-pre-wrap break-words rounded-xl border px-3 py-2 text-sm leading-5 ${role === 'user' ? 'ml-auto border-violet-400/20 bg-violet-400/10 text-violet-100' : 'border-white/[.08] bg-white/[.03] text-slate-300'}`;
+      item.textContent = content;
+      document.getElementById('chat-messages').append(item);
+      item.scrollIntoView({ block: 'nearest' });
+    }
+    document.getElementById('code-chat-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const questionInput = document.getElementById('code-chat-question');
+      const question = questionInput.value.trim();
+      const send = document.getElementById('code-chat-send');
+      if (!question) { questionInput.focus(); return; }
+      send.disabled = true;
+      document.getElementById('chat-status').textContent = 'Thinking about the current code…';
+      addChatMessage('user', question);
+      try {
+        const response = await apiFetch('/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question,
+            model_id: document.getElementById('model-select').value,
+            context: { source: inputEditor.getValue(), output: outputEditor.getValue(), language: generatedLanguage },
+            history: chatHistory
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'The AI question failed.');
+        addChatMessage('assistant', data.answer);
+        chatHistory.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
+        if (chatHistory.length > 8) chatHistory.splice(0, chatHistory.length - 8);
+        questionInput.value = '';
+        document.getElementById('chat-status').textContent = 'Answer uses your current editor contents.';
+      } catch (error) {
+        addChatMessage('assistant', `Could not answer: ${error.message}`);
+        document.getElementById('chat-status').textContent = 'Check that the backend and selected AI provider are available.';
+      } finally { send.disabled = false; }
+    });
+
+    document.getElementById('download-colab').addEventListener('click', () => {
+      const code = outputEditor.getValue().trim();
+      if (!code) { document.getElementById('chat-status').textContent = 'Convert some code first, then export the generated Python.'; return; }
+      if (generatedLanguage.toLowerCase() !== 'python') { document.getElementById('chat-status').textContent = 'Colab export is for Python output. Select Python and convert again first.'; return; }
+      const notebook = {
+        cells: [
+          { cell_type: 'markdown', metadata: {}, source: ['# LogicForge code\n', 'Review the assumptions and dependencies before running this generated code in Google Colab.\n', 'Colab is a hosted environment; uploading or opening this notebook sends it to Google.'] },
+          { cell_type: 'code', execution_count: null, metadata: {}, outputs: [], source: code.split('\n').map((line, index, lines) => line + (index < lines.length - 1 ? '\n' : '')) },
+          { cell_type: 'markdown', metadata: {}, source: ['## Optional classifier evaluation\n', 'For a classification task, run your model on labeled test data and compare `y_test` with `y_pred`. The confusion matrix counts correct and mistaken class predictions. It does not measure arbitrary code quality.'] },
+          { cell_type: 'code', execution_count: null, metadata: {}, outputs: [], source: ['# Optional: use only for a classification model with true and predicted labels\n', '# !pip -q install scikit-learn\n', '# from sklearn.metrics import confusion_matrix, classification_report\n', '# y_test = [...]\n', '# y_pred = [...]\n', '# print(confusion_matrix(y_test, y_pred))\n', '# print(classification_report(y_test, y_pred, zero_division=0))'] }
+        ],
+        metadata: { colab: { name: 'LogicForge.ipynb', provenance: [] }, kernelspec: { display_name: 'Python 3', language: 'python', name: 'python3' }, language_info: { name: 'python' } },
+        nbformat: 4, nbformat_minor: 5
+      };
+      const blob = new Blob([JSON.stringify(notebook, null, 2)], { type: 'application/x-ipynb+json' });
+      const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'LogicForge-Colab.ipynb'; link.click(); URL.revokeObjectURL(link.href);
+      document.getElementById('chat-status').textContent = 'Notebook downloaded. Upload LogicForge-Colab.ipynb to Google Colab to run it.';
+    });
+
+    document.getElementById('evaluate-classifier').addEventListener('click', () => {
+      const tokenize = id => document.getElementById(id).value.split(/[\n,]+/).map(value => value.trim()).filter(Boolean);
+      const actual = tokenize('actual-labels');
+      const predicted = tokenize('predicted-labels');
+      const result = document.getElementById('matrix-result');
+      const status = document.getElementById('matrix-status');
+      result.classList.remove('hidden');
+      if (!actual.length || actual.length !== predicted.length) {
+        result.textContent = '';
+        status.textContent = actual.length ? `Label count mismatch: ${actual.length} actual and ${predicted.length} predicted.` : 'Add at least one actual/predicted label pair.';
+        return;
+      }
+      const classes = [...new Set([...actual, ...predicted])].sort((a, b) => a.localeCompare(b));
+      const matrix = classes.map(() => classes.map(() => 0));
+      const index = new Map(classes.map((label, i) => [label, i]));
+      actual.forEach((label, row) => { matrix[index.get(label)][index.get(predicted[row])] += 1; });
+      const lines = [['actual \\ predicted', ...classes].join(' | '), ...classes.map((label, row) => [label, ...matrix[row]].join(' | '))];
+      const total = actual.length;
+      const accuracy = matrix.reduce((sum, row, i) => sum + row[i], 0) / total;
+      const scores = classes.map((label, i) => {
+        const tp = matrix[i][i];
+        const fp = matrix.reduce((sum, row) => sum + row[i], 0) - tp;
+        const fn = matrix[i].reduce((sum, count) => sum + count, 0) - tp;
+        const precision = tp + fp ? tp / (tp + fp) : 0;
+        const recall = tp + fn ? tp / (tp + fn) : 0;
+        const f1 = precision + recall ? 2 * precision * recall / (precision + recall) : 0;
+        return { label, precision, recall, f1 };
+      });
+      const mean = field => scores.reduce((sum, score) => sum + score[field], 0) / scores.length;
+      lines.push('', `Samples: ${total}`, `Accuracy: ${(accuracy * 100).toFixed(2)}%`, `Macro precision: ${(mean('precision') * 100).toFixed(2)}%`, `Macro recall: ${(mean('recall') * 100).toFixed(2)}%`, `Macro F1: ${(mean('f1') * 100).toFixed(2)}%`);
+      result.textContent = lines.join('\n');
+      status.textContent = 'Calculated locally from the labels you entered. Use a held-out test set for meaningful results.';
+    });
+
     function languageFromEditor() {
       const mode = outputEditor.getOption('mode');
       const map = { python: 'Python', javascript: 'JavaScript', 'text/x-csrc': 'C', 'text/x-c++src': 'C++', 'text/x-csharp': 'C# / .NET', 'text/x-java': 'Java', go: 'Go', rust: 'Rust', php: 'PHP', ruby: 'Ruby', shell: 'Bash' };
@@ -317,8 +436,8 @@
         const data = await response.json();
         compilerConfigured = response.ok && data.configured === true;
         label.textContent = compilerConfigured
-          ? 'Judge0 is configured. Code is sent only when you confirm and click Compile & Run.'
-          : 'Not configured. Add Judge0 settings from README.md to enable online compilation.';
+          ? `Judge0 is reachable (${data.languages.length} runtimes${data.supported_targets?.length ? `; supports ${data.supported_targets.join(', ')}` : ''}). Code is sent only when you confirm and click Compile & Run.`
+          : `Judge0 is unavailable (${data.error || 'no runtimes reported'}). A personal or self-hosted endpoint can be set in README.md.`;
         runButton.disabled = !compilerConfigured || !outputEditor.getValue().trim();
       } catch (_) {
         compilerConfigured = false;
