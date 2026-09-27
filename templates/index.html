@@ -174,7 +174,8 @@
       { version: 'V5.0', title: 'C# / .NET and deeper code lessons', date: 'Learning upgrade', detail: 'Added a dedicated modern C# / .NET target, an explicit intent-match verdict, execution-flow breakdown, and variable/function explanations.' },
       { version: 'V6.0', title: 'RAG, review checks, and local LoRA path', date: 'AI pipeline upgrade', detail: 'Added local knowledge retrieval, a second model review and one repair pass, safe static checks, and an optional Ollama provider for locally fine-tuned models.' },
       { version: 'V7.0', title: 'Online compile and run', date: 'Compiler upgrade', detail: 'Added an optional Judge0 compiler with explicit per-run consent, stdin, compile diagnostics, program output, and bounded execution settings.' },
-      { version: 'V8.0', title: 'Hosted backend connection', date: 'Deployment hardening', detail: 'Added a health endpoint, a session-only backend access key, origin-aware CORS, and basic request throttling for hosted use.' }
+      { version: 'V8.0', title: 'Hosted backend connection', date: 'Deployment hardening', detail: 'Added a health endpoint, a session-only backend access key, origin-aware CORS, and basic request throttling for hosted use.' },
+      { version: 'V9.0', title: 'Render API deployment', date: 'Cloud hosting', detail: 'Added a Render Blueprint for the Flask API, Python runtime pin, Gunicorn serving, health checks, and secret-only Copilot configuration.' }
     ];
     const inputEditor = CodeMirror.fromTextArea(document.getElementById('source'), {
       theme: 'material-darker', lineNumbers: true, lineWrapping: true, indentUnit: 4, tabSize: 4,
