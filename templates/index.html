@@ -32,12 +32,19 @@
         </span>
         <span><span class="block text-lg font-semibold tracking-tight">LogicForge</span><span class="block text-xs text-slate-500">PSEUDOCODE → CODE → UNDERSTANDING</span></span>
       </a>
-      <div class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[.03] px-3 py-1.5 text-xs text-slate-400 sm:flex"><span class="status-dot h-1.5 w-1.5 rounded-full bg-emerald-400 text-emerald-400"></span> LOCAL WORKSPACE</div>
+      <div class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[.03] px-3 py-1.5 text-xs text-slate-400 sm:flex"><span class="status-dot h-1.5 w-1.5 rounded-full bg-emerald-400 text-emerald-400"></span> LOGIC WORKSPACE</div>
     </header>
     <nav class="-mt-3 mb-7 flex gap-2 text-sm" aria-label="Main navigation">
       <a href="#workspace" class="rounded-lg px-3 py-2 text-slate-400 transition hover:bg-white/5 hover:text-white">Workspace</a>
       <a href="#updated-patches" class="rounded-lg px-3 py-2 text-slate-400 transition hover:bg-white/5 hover:text-white">Updated Patches</a>
     </nav>
+
+    <section class="mb-7 rounded-xl border border-white/10 bg-white/[.025] p-3 sm:flex sm:items-center sm:gap-3" aria-label="Hosted backend access">
+      <div class="mb-2 sm:mb-0 sm:min-w-48"><p class="text-sm font-medium text-slate-200">Hosted API access</p><p id="api-key-status" class="mt-1 text-xs text-slate-500">Not required for local mode</p></div>
+      <label class="sr-only" for="api-access-key">LogicForge backend access key</label>
+      <input id="api-access-key" type="password" autocomplete="off" class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0b0e14] px-3 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:border-violet-400" placeholder="Enter hosted backend access key (kept for this tab session)">
+      <button id="save-api-key" type="button" class="mt-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/15 sm:mt-0">Connect</button>
+    </section>
 
     <main>
       <div id="workspace"></div>
@@ -149,6 +156,16 @@
   <script>
     const APP_CONFIG = window.LOGICFORGE_CONFIG || { apiBaseUrl: '', githubRepo: '' };
     const API_BASE = (APP_CONFIG.apiBaseUrl || '').replace(/\/$/, '');
+    const API_KEY_STORAGE = 'logicforge-api-access-key';
+    const apiKeyInput = document.getElementById('api-access-key');
+    const apiKeyStatus = document.getElementById('api-key-status');
+    apiKeyInput.value = sessionStorage.getItem(API_KEY_STORAGE) || '';
+    async function apiFetch(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      const key = apiKeyInput.value.trim() || sessionStorage.getItem(API_KEY_STORAGE) || '';
+      if (key) headers.set('Authorization', `Bearer ${key}`);
+      return fetch(`${API_BASE}${path}`, { ...options, headers });
+    }
     const RELEASES = [
       { version: 'V1.0', title: 'Initial foundation', date: 'Foundation', detail: 'Built the Flask app, dark CodeMirror workspace, line numbers, and asynchronous conversion flow.' },
       { version: 'V2.0', title: 'Copilot learning engine', date: 'AI upgrade', detail: 'Moved to the GitHub Copilot SDK. Added core-logic checks, variable preservation, and beginner-friendly learning notes.' },
@@ -156,7 +173,8 @@
       { version: 'V4.0', title: 'Updated Patches and Pages', date: 'Pages update', detail: 'Added this version history, live GitHub commit feed, and a GitHub Pages deployment workflow.' },
       { version: 'V5.0', title: 'C# / .NET and deeper code lessons', date: 'Learning upgrade', detail: 'Added a dedicated modern C# / .NET target, an explicit intent-match verdict, execution-flow breakdown, and variable/function explanations.' },
       { version: 'V6.0', title: 'RAG, review checks, and local LoRA path', date: 'AI pipeline upgrade', detail: 'Added local knowledge retrieval, a second model review and one repair pass, safe static checks, and an optional Ollama provider for locally fine-tuned models.' },
-      { version: 'V7.0', title: 'Online compile and run', date: 'Compiler upgrade', detail: 'Added an optional Judge0 compiler with explicit per-run consent, stdin, compile diagnostics, program output, and bounded execution settings.' }
+      { version: 'V7.0', title: 'Online compile and run', date: 'Compiler upgrade', detail: 'Added an optional Judge0 compiler with explicit per-run consent, stdin, compile diagnostics, program output, and bounded execution settings.' },
+      { version: 'V8.0', title: 'Hosted backend connection', date: 'Deployment hardening', detail: 'Added a health endpoint, a session-only backend access key, origin-aware CORS, and basic request throttling for hosted use.' }
     ];
     const inputEditor = CodeMirror.fromTextArea(document.getElementById('source'), {
       theme: 'material-darker', lineNumbers: true, lineWrapping: true, indentUnit: 4, tabSize: 4,
@@ -170,6 +188,19 @@
     const runButton = document.getElementById('run-online');
     let compilerConfigured = false;
     let generatedLanguage = 'Python';
+
+    document.getElementById('save-api-key').addEventListener('click', () => {
+      const key = apiKeyInput.value.trim();
+      if (key) {
+        sessionStorage.setItem(API_KEY_STORAGE, key);
+        apiKeyStatus.textContent = 'Key is held in this tab session only.';
+      } else {
+        sessionStorage.removeItem(API_KEY_STORAGE);
+        apiKeyStatus.textContent = API_BASE ? 'Enter the hosted backend access key.' : 'Not required for local mode';
+      }
+      loadCopilotModels();
+      loadCompilerStatus();
+    });
 
     inputEditor.on('change', editor => {
       const chars = editor.getValue().length;
@@ -199,7 +230,7 @@
       document.getElementById('convert-label').textContent = 'FORGING YOUR CODE…';
       outputMeta.textContent = 'Retrieving guidance, generating, then reviewing and checking…';
       try {
-        const response = await fetch(`${API_BASE}/convert`, {
+        const response = await apiFetch('/convert', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ input, target_language: document.getElementById('target-language').value, model_id: document.getElementById('model-select').value })
         });
@@ -240,7 +271,7 @@
       output.textContent = 'Submitting to Judge0…';
       document.getElementById('compiler-config-status').textContent = 'Submitting your code to the configured remote Judge0 service…';
       try {
-        const response = await fetch(`${API_BASE}/execute`, {
+        const response = await apiFetch('/execute', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code, target_language: language, stdin: document.getElementById('program-stdin').value, confirm_remote: true })
         });
@@ -281,7 +312,7 @@
     async function loadCompilerStatus() {
       const label = document.getElementById('compiler-config-status');
       try {
-        const response = await fetch(`${API_BASE}/compiler/status`);
+        const response = await apiFetch('/compiler/status');
         const data = await response.json();
         compilerConfigured = response.ok && data.configured === true;
         label.textContent = compilerConfigured
@@ -310,16 +341,16 @@
     async function loadCopilotModels() {
       const select = document.getElementById('model-select');
       try {
-        const response = await fetch(`${API_BASE}/models`);
+        const response = await apiFetch('/models');
         const data = await response.json();
         if (!response.ok || !Array.isArray(data.models) || data.models.length === 0) throw new Error(data.error || 'No models available');
         select.replaceChildren(...data.models.map(model => {
           const option = document.createElement('option'); option.value = model.id; option.textContent = model.name || model.id; return option;
         }));
         if (data.models.some(model => model.id === data.default_model)) select.value = data.default_model;
-      } catch (_) {
+      } catch (error) {
         select.replaceChildren(new Option('Provider unavailable', 'auto'));
-        outputMeta.textContent = 'Start Flask and check the selected AI provider to load models.';
+        outputMeta.textContent = error.message || 'Check the backend access key and selected AI provider.';
       }
     }
     function renderReleases() {
@@ -365,6 +396,9 @@
     document.getElementById('load-commits').addEventListener('click', loadCommitHistory);
     document.getElementById('github-repo').addEventListener('keydown', event => { if (event.key === 'Enter') loadCommitHistory(); });
     document.getElementById('github-repo').value = localStorage.getItem('logicforge-github-repo') || APP_CONFIG.githubRepo || '';
+    apiKeyStatus.textContent = API_BASE
+      ? (apiKeyInput.value ? 'Key is held in this tab session only.' : 'Hosted backend key required to use AI features.')
+      : 'Not required for local mode';
     renderReleases(); loadCopilotModels(); loadCompilerStatus();
     if (document.getElementById('github-repo').value) loadCommitHistory();
     inputEditor.refresh(); outputEditor.refresh();
