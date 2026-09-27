@@ -18,6 +18,23 @@ if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
     throw "Ollama was installed, but this terminal cannot find ollama.exe. Reopen PowerShell and run .\setup-local-ai.ps1 again."
 }
 
+try {
+    Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/version" -TimeoutSec 2 | Out-Null
+} catch {
+    Write-Host "Starting the Ollama local server..."
+    Start-Process -FilePath (Get-Command ollama).Source -ArgumentList "serve" -WindowStyle Hidden
+    $ready = $false
+    for ($attempt = 0; $attempt -lt 20; $attempt++) {
+        Start-Sleep -Seconds 1
+        try {
+            Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/version" -TimeoutSec 2 | Out-Null
+            $ready = $true
+            break
+        } catch { }
+    }
+    if (-not $ready) { throw "Ollama did not start on http://127.0.0.1:11434. Start Ollama from the Start menu and try again." }
+}
+
 Write-Host "Downloading local code model $ChatModel ..."
 ollama pull $ChatModel
 if ($LASTEXITCODE -ne 0) { throw "Could not download the chat model." }
