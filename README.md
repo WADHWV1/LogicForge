@@ -65,8 +65,8 @@ You can run a local model through Ollama by setting `$env:LOGICFORGE_PROVIDER = 
 
 GitHub Pages hosts the static interface; it does not run the Flask/Copilot backend. To use conversion from the hosted page, host the Flask app separately.
 
-1. Push this project to the repository's `main` branch. The included `.github/workflows/pages.yml` publishes `docs/` on each push and copies the current editor from `templates/index.html` before deployment.
-2. In **Settings → Pages**, select **GitHub Actions** as the deployment source. A private repository needs a GitHub plan that supports Pages for private repositories. Pages sites are public by default, so the deployed interface and any bundled frontend code can be viewed by anyone even when the source repository is private.
+1. In **Settings → Pages**, select **GitHub Actions** as the deployment source. GitHub currently blocks Pages for this private repository on the account’s plan. The included workflow is manual-only while Pages is unavailable; run it from **Actions → Publish LogicForge to GitHub Pages → Run workflow** after Pages access is enabled.
+2. Pages sites are public by default, so the deployed interface and any bundled frontend code can be viewed by anyone even when the source repository is private.
 3. GitHub Pages hosts only the static interface; it does not run Flask or Copilot. To enable conversion from the hosted UI, set `apiBaseUrl` in `docs/site-config.js` to a separately hosted Flask API origin, and add `https://YOUR-USERNAME.github.io` to `LOGICFORGE_ALLOWED_ORIGINS` on the backend.
 
 Never put a Copilot token in `docs/site-config.js` or browser JavaScript. Protect any public backend with authentication and rate limits. For local use, leave `apiBaseUrl` empty.
