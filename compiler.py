@@ -38,9 +38,14 @@ class CompilerError(Exception):
 
 def _base_url() -> str:
     value = os.getenv("JUDGE0_BASE_URL", "").strip().rstrip("/")
-    if not value and os.getenv("JUDGE0_API_KEY"):
+    if value:
+        return value
+    if os.getenv("JUDGE0_API_KEY"):
         value = "https://judge0-ce.p.rapidapi.com"
-    return value
+        return value
+    # Shared public Judge0 CE is a zero-setup starter. Users can override this
+    # with a personal provider or self-hosted endpoint for steadier capacity.
+    return "https://ce.judge0.com"
 
 
 def is_configured() -> bool:
@@ -87,6 +92,29 @@ def get_languages() -> list[dict]:
     if not isinstance(result, list):
         raise CompilerError("Judge0 returned an unexpected languages response.")
     return [item for item in result if isinstance(item, dict) and isinstance(item.get("id"), int) and isinstance(item.get("name"), str) and not item.get("is_archived", False)]
+
+
+def connection_status() -> dict:
+    """Probe the configured Judge0 host and report the languages it exposes."""
+    base = _base_url()
+    try:
+        languages = get_languages()
+    except CompilerError as exc:
+        return {"configured": False, "provider": base, "error": str(exc), "languages": []}
+    targets = []
+    for target in TARGET_ALIASES:
+        try:
+            _language_id(target, languages)
+            targets.append(target)
+        except CompilerError:
+            continue
+    return {
+        "configured": bool(languages),
+        "provider": base,
+        "languages": [item["name"] for item in languages],
+        "supported_targets": targets,
+        "error": "Judge0 returned no active languages." if not languages else "",
+    }
 
 
 def _language_id(target: str, languages: list[dict]) -> int:
