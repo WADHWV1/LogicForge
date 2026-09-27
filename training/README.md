@@ -2,6 +2,8 @@
 
 This is real supervised fine-tuning of an open-weight model with a LoRA adapter. It does **not** modify GitHub Copilot's hosted models. LogicForge does not silently save prompts; only place examples you reviewed and chose to include in `data/approved.jsonl`.
 
+The checked-in `approved.jsonl` currently has no examples. The trainer intentionally refuses to run until it has at least 20 approved records. That minimum only protects against an accidental empty/tiny run; it is not enough to establish quality. Start with 100+ varied, carefully reviewed examples, keep a separate held-out test set, and compare the base model with the tuned model on the same prompts before relying on an adapter.
+
 ## Prepare examples
 
 Use one JSON object per line, each with a `messages` array. Include the user's rough logic and a high-quality LogicForge answer with the code, preserved identifiers, and useful explanation. Use examples you have rights to use. Start with at least 20 for the script's guardrail; 100 or more varied and carefully reviewed examples are a better starting point. Reserve separate examples for evaluation. Do not train on generated answers without reviewing them.
