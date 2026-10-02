@@ -1,7 +1,0 @@
-# Optional only; core LogicForge does not require training libraries.
-torch>=2.2
-transformers>=4.46
-datasets>=3.0
-trl>=0.12
-peft>=0.13
-accelerate>=1.0

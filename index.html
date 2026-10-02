@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#070a12" />
+  <title>CodeLens AI — Demo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="glow one"></div><div class="glow two"></div>
+  <main class="page">
+    <section class="hero">
+      <div class="badge">LOCAL-FIRST AI LEARNING WORKSPACE</div>
+      <h1>CodeLens AI</h1>
+      <p>Understand every line. Learn the why behind code. Practise explaining it back.</p>
+      <div class="actions"><a href="#demo">Open demo</a><a class="ghost" href="https://github.com/WADHWV1/LogicForge">GitHub repo</a></div>
+    </section>
+
+    <section class="demo" id="demo">
+      <div class="panel">
+        <div class="head"><span>01</span><h2>Code Editor</h2></div>
+        <textarea id="code">def calculate_power(v, i):
+    if v is None or i is None:
+        return 0
+
+    power = v * i
+    return power</textarea>
+        <div class="buttons"><button id="explain">Explain</button><button id="why">WHY mode</button><button id="tree">Knowledge tree</button></div>
+      </div>
+      <div class="panel output">
+        <div class="head"><span>02</span><h2>AI Explainer</h2></div>
+        <div id="result" class="result"><h3>Ready.</h3><p>This GitHub Pages version is a static demo. The full FastAPI + OpenRouter version runs locally from the ZIP.</p></div>
+      </div>
+      <div class="panel output">
+        <div class="head"><span>03</span><h2>Knowledge</h2></div>
+        <div id="treeOut" class="result"><div class="node root">Code Understanding Map</div><p>Click Knowledge tree.</p></div>
+      </div>
+    </section>
+
+    <section class="cards">
+      <article><h3>WHY Mode</h3><p>Explains developer intent, not just syntax.</p></article>
+      <article><h3>Lecturer Prep</h3><p>Turns code into questions and answers for presentations.</p></article>
+      <article><h3>Project Upload</h3><p>The local app analyses ZIP projects and creates architecture summaries.</p></article>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
